@@ -1,0 +1,2 @@
+Chúng ta sẽ push ALtium lên đây nếu cần vẽ mạch
+Ít nhất mình phải có mạch nguồn 5V nuôi kit

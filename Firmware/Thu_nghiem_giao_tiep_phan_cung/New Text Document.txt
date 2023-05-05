@@ -1,0 +1,2 @@
+A Tuấn, Chiến tạo các foder riêng cho từng giao thức nhé
+ví dụ forder I2C thì có file code, sơ đồ nguyên lý, ảnh cắm test
