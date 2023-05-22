@@ -22,10 +22,12 @@
 #include "lwip/netdb.h"
 
 #include "mqtt_client.h"
+#include "dht11.h"
 
-#define WIFI_SSID "Mandevices Laboratory"
-#define WIFI_PASS "MANDevices"
+#define WIFI_SSID "Lâm dâm"
+#define WIFI_PASS "204204204"
 #define MAX_RETRY 10
+#define DHT_GPIO 27
 
 #define WIFI_CONNECTED_BIT BIT1
 #define WIFI_FAIL_BIT      BIT0
@@ -98,11 +100,11 @@ static void mqtt_app_start(void)
     ESP_LOGI(TAG, "Starting MQTT");
     esp_mqtt_client_config_t mqttConfig = { .uri = ""}; // dia chi IP MQTT broker
     client = esp_mqtt_client_init(&mqttConfig);
-
     esp_mqtt_client_register_event(client,
                                     ESP_EVENT_ANY_ID,
                                     mqtt_event_handler,
                                     client);
+    esp_mqtt_client_start(client);
 }
 
 void wifi_init_sta(void)
@@ -164,6 +166,10 @@ void wifi_init_sta(void)
         }
 }
 
+void DHT_Pub_task (void *pvParameter)
+{
+
+}
 void app_main(void)
 {
     //tao phan vung NVS
@@ -176,4 +182,5 @@ void app_main(void)
     ESP_ERROR_CHECK(nvs);
     ESP_LOGI(TAG, "ESP_MODE_STA");
     wifi_init_sta(); //khoi tao ket noi wifi
+    xTaskCreate();
 }
