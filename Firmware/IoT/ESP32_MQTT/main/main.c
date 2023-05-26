@@ -23,16 +23,21 @@
 
 #include "mqtt_client.h"
 #include "dht11.h"
+#include "driver/gpio.h"
 
 #define WIFI_SSID "Lâm dâm"
 #define WIFI_PASS "204204204"
 #define MAX_RETRY 10
+static int retry = 0;
 #define DHT_GPIO 27
 
 #define WIFI_CONNECTED_BIT BIT1
 #define WIFI_FAIL_BIT      BIT0
+uint32_t MQTT_CONNECTED = 0;
+#define MQTT_PUB_TEMP "esp32/dht/temp"
+#define MQTT_PUB_HUM  "esp32/dht/hum"  
 
-static int retry = 0;
+
 // dang ki nhat ky
 static const char *TAG = "DEMO_MQTT";
 static EventGroupHandle_t s_wifi_event_group;
@@ -71,7 +76,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
 
 static void mqtt_event_handle(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
-    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
+    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", event_base, event_id);
     esp_mqtt_event_handle_t event = event_data;
 
     switch ((esp_mqtt_event_id_t)event_id)
@@ -168,7 +173,7 @@ void wifi_init_sta(void)
 
 void DHT_Pub_task (void *pvParameter)
 {
-
+    gpio_set_direction(DHT_GPIO, GPIO_MODE_INPUT);
 }
 void app_main(void)
 {
