@@ -38,6 +38,8 @@ uint32_t MQTT_CONNECTED = 0;
 #define MQTT_PUB_HUM  "esp32/dht/hum"  
 
 
+static void mqtt_app_start(void);
+
 // dang ki nhat ky
 static const char *TAG = "DEMO_MQTT";
 static EventGroupHandle_t s_wifi_event_group;
@@ -73,45 +75,6 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
         mqtt_app_start();
     }
 }
-
-static void mqtt_event_handle(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
-{
-    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", event_base, event_id);
-    esp_mqtt_event_handle_t event = event_data;
-
-    switch ((esp_mqtt_event_id_t)event_id)
-    {
-    case MQTT_EVENT_CONNECTED:
-        ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        MQTT_CONNECTED = 1;
-        break;
-
-    case MQTT_EVENT_DISCONNECTED:
-        ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
-        MQTT_CONNECTED = 0;
-        break;
-
-    case MQTT_EVENT_ERROR:
-        ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
-        break;
-    default:
-        ESP_LOGI(TAG, "Other event id:%d", event->event_id);
-        break;
-    }
-}
-
-static void mqtt_app_start(void)
-{
-    ESP_LOGI(TAG, "Starting MQTT");
-    esp_mqtt_client_config_t mqttConfig = { .uri = ""}; // dia chi IP MQTT broker
-    client = esp_mqtt_client_init(&mqttConfig);
-    esp_mqtt_client_register_event(client,
-                                    ESP_EVENT_ANY_ID,
-                                    mqtt_event_handler,
-                                    client);
-    esp_mqtt_client_start(client);
-}
-
 void wifi_init_sta(void)
 {
     //theo doi su kien wifi
@@ -171,9 +134,73 @@ void wifi_init_sta(void)
         }
 }
 
+static void mqtt_event_handle(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+    ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", event_base, event_id);
+    esp_mqtt_event_handle_t event = event_data;
+
+    switch ((esp_mqtt_event_id_t)event_id)
+    {
+    case MQTT_EVENT_CONNECTED:
+        ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+        MQTT_CONNECTED = 1;
+        break;
+
+    case MQTT_EVENT_DISCONNECTED:
+        ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+        MQTT_CONNECTED = 0;
+        break;
+
+    case MQTT_EVENT_ERROR:
+        ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
+        break;
+    default:
+        ESP_LOGI(TAG, "Other event id:%d", event->event_id);
+        break;
+    }
+}
+
+static void mqtt_app_start(void)
+{
+    ESP_LOGI(TAG, "Starting MQTT");
+    esp_mqtt_client_config_t mqttConfig = { .uri = "mqtt://YOUR_RPI_IP_ADDRESS:1883"}; // dia chi IP MQTT broker
+    client = esp_mqtt_client_init(&mqttConfig);
+    esp_mqtt_client_register_event(client,
+                                    ESP_EVENT_ANY_ID,
+                                    mqtt_event_handle,
+                                    client);
+    esp_mqtt_client_start(client);
+}
+
+
+
 void DHT_Pub_task (void *pvParameter)
 {
     gpio_set_direction(DHT_GPIO, GPIO_MODE_INPUT);
+    setDHTgpio(DHT_GPIO);
+    while(1)
+    {
+        int ret = readDHT();
+        errorHandler(ret);
+
+        float hum = getHumidity();
+        char humidity[12];
+        sprintf(humidity, "%.2f", hum);
+
+        float temp = getTemperature();
+        char temperature[12];
+        sprintf(temperature, "%.2f", temp);
+
+        printf("Humidity %.2s \n", humidity);
+        printf("Temperature %.2s \n\n",temperature);
+
+        if(MQTT_CONNECTED)
+        {
+            esp_mqtt_client_publish(client, MQTT_PUB_HUM, humidity, 0, 0, 0);
+            esp_mqtt_client_publish(client, MQTT_PUB_TEMP, humidity, 0, 0, 0);
+        }
+        vTaskDelay(5000/portMAX_DELAY);
+    }
 }
 void app_main(void)
 {
@@ -187,5 +214,5 @@ void app_main(void)
     ESP_ERROR_CHECK(nvs);
     ESP_LOGI(TAG, "ESP_MODE_STA");
     wifi_init_sta(); //khoi tao ket noi wifi
-    xTaskCreate();
+    xTaskCreate(&DHT_Pub_task,"DHT_Pub",2048, NULL, 5, NULL);
 }

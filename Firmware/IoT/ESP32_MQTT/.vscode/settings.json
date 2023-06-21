@@ -3,7 +3,8 @@
     "files.associations": {
         "task.h": "c",
         "netdb.h": "c",
-        "dht11.h": "c"
+        "dht11.h": "c",
+        "gkktlt.C": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

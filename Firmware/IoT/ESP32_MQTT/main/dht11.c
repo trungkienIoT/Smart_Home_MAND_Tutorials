@@ -82,6 +82,7 @@ int getSignalLevel( int usTimeOut, bool state )
 		if( uSec > usTimeOut ) 
 			return -1;
 		
+		
 		++uSec;
 		ets_delay_us(1);		// uSec delay
 	}
